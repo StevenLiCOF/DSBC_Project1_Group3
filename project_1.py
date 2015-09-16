@@ -49,32 +49,63 @@ mojo_df['intyear']=[int(year) for year in mojo_df['year']]
 meta_df['upper_title']= map(lambda x: x.upper(), meta_df['title'])
 mojo_df['upper_title']= map(lambda x: x.upper(), mojo_df['title'])
 merged_df = pd.merge(meta_df, mojo_df, how='outer', on='upper_title')
-#print mojo_df.shape
-#print meta_df.shape
-#print merged_df.shape
-#print mojo_df.columns.values
-#print meta_df.columns.values
-#print merged_df.columns.values
-merged_df=merged_df.sort('upper_title')
-#merged_years=merged_df[['year_x','year_y']]
-#merged_directors=merged_df[['director_x','director_y']]
-#both_directors=merged_directors.dropna(axis=0)
-#notequal_directors=both_directors[both_directors.director_x!=both_directors.director_y]
-#both_years=merged_years.dropna(axis=0)
-#notequal_years=both_years[both_years.year_x!=both_years.year_x]
-#meta_df['str_title']=[str(title) for title in meta_df[['title']]]
-#meta_df['str_title']=map(lambda x: str(x), meta_df[['title']])
-#[type(title) for title in meta_df[['title']]]
-#[str(title) for title in meta_df[['title']]]
 
-#print str(1000)
-merged_df['year'] = merged_df['year_x'].fillna(merged_df['year_y'])
-merged_df=merged_df.dropna(subset=['year'])
-merged_df['year']=map(lambda x: int(float(x)), merged_df['year'])
-float('2008.0')
+merged_df=merged_df.sort('upper_title')
+
+merged_df.columns.values
+
+merged_df['intyear'] = merged_df['intyear_x'].fillna(merged_df['intyear_y'])
+
 merged_df['director'] = merged_df['director_x'].fillna(merged_df['director_y'])
-merged_df=merged_df.dropna(subset=['year'])
-merged_df['year'] = map(lambda x: int(x), merged_df['year'])
+
+merged_df['international_gross']=merged_df['worldwide_gross']-merged_df['domestic_gross']
+#merged_df['international_gross'].describe()
+
+merged_df['ROI-total']=merged_df['worldwide_gross']/merged_df['production_budget']
+merged_df['ROI-domestic']=merged_df['domestic_gross']/merged_df['production_budget']
+merged_df['ROI-international']=merged_df['international_gross']/merged_df['production_budget']
+merged_df['ROI-total'].describe()
+merged_df['ROI-domestic'].describe()
+merged_df['ROI-international'].describe()
+merged_df['production_budget'].describe()
+merged_df=merged_df.sort('ROI-total')
+
+merged_df['dummy']=1
+director_money=merged_df[['director','ROI-total','worldwide_gross']].groupby(['director']).mean()
+director_count=merged_df[['director','dummy']].groupby(['director']).count()
+director_money['director']=director_money.index
+director_count['director']=director_count.index
+director_merged = pd.merge(director_money, director_count, how='outer', on='director')
+merged_df = pd.merge(merged_df, director_merged, how='outer', on='director')
+
+merged_df = merged_df.drop(['director_x',
+                            'director_y',
+                            'intyear_x',
+                            'intyear_y',
+                            'year_x',
+                            'year_y',
+                            'complete',
+                            'mojo_slug',
+                            'dummy_x',
+                            'complete',
+                            'unable to retrieve',
+                            'title_x',
+                            'title_y',
+                            'metacritic_page',
+                            'alt_title'], 1)
+
+pprint(merged_df.columns.values)
+new_columns = ['genre', 'metascore', 'num_critic_reviews', 'num_user_ratings',
+       'num_user_reviews', 'rating', 'release_date', 'runtime_minutes',
+       'studio', 'user_score', 'title', 'domestic_gross',
+       'opening_per_theater', 'opening_weekend_take',
+       'production_budget', 'release_date_limited', 'release_date_wide',
+       'widest_release', 'worldwide_gross', 'intyear', 'director',
+       'international_gross', 'ROI-total', 'ROI-domestic',
+       'ROI-international', 'director_ROI-total', 'director_worldwide_gross', 'director_count']
+merged_df.columns=new_columns
+
+
 merged_df['title_len']=merged_df[len('title')]
 modelinputs = merged_df[['title',
                          'year',
