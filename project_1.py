@@ -40,24 +40,41 @@ import pandas as pd
 
 mojo_df = pd.DataFrame(mojomovies)
 meta_df = pd.DataFrame(metacriticmovies)
-merged_df = pd.merge(meta_df, mojo_df, how='outer', on='title')
+meta_df['year']=meta_df['year'].replace('',np.nan)
+meta_df=meta_df.sort('year')
+meta_df=meta_df.dropna(subset=['title','year'],how='any')
+mojo_df=mojo_df.dropna(subset=['title','year'],how='any')
+meta_df['intyear']=[int(year) for year in meta_df['year']]
+mojo_df['intyear']=[int(year) for year in mojo_df['year']]
+meta_df['upper_title']= map(lambda x: x.upper(), meta_df['title'])
+mojo_df['upper_title']= map(lambda x: x.upper(), mojo_df['title'])
+merged_df = pd.merge(meta_df, mojo_df, how='outer', on='upper_title')
 #print mojo_df.shape
 #print meta_df.shape
 #print merged_df.shape
 #print mojo_df.columns.values
 #print meta_df.columns.values
 #print merged_df.columns.values
-merged_df=merged_df.sort('title')
+merged_df=merged_df.sort('upper_title')
 #merged_years=merged_df[['year_x','year_y']]
 #merged_directors=merged_df[['director_x','director_y']]
 #both_directors=merged_directors.dropna(axis=0)
 #notequal_directors=both_directors[both_directors.director_x!=both_directors.director_y]
 #both_years=merged_years.dropna(axis=0)
 #notequal_years=both_years[both_years.year_x!=both_years.year_x]
+#meta_df['str_title']=[str(title) for title in meta_df[['title']]]
+#meta_df['str_title']=map(lambda x: str(x), meta_df[['title']])
+#[type(title) for title in meta_df[['title']]]
+#[str(title) for title in meta_df[['title']]]
+
+#print str(1000)
 merged_df['year'] = merged_df['year_x'].fillna(merged_df['year_y'])
+merged_df=merged_df.dropna(subset=['year'])
+merged_df['year']=map(lambda x: int(float(x)), merged_df['year'])
+float('2008.0')
 merged_df['director'] = merged_df['director_x'].fillna(merged_df['director_y'])
 merged_df=merged_df.dropna(subset=['year'])
-merged_df['year'] = merged_df['year'].astype(int)
+merged_df['year'] = map(lambda x: int(x), merged_df['year'])
 merged_df['title_len']=merged_df[len('title')]
 modelinputs = merged_df[['title',
                          'year',
