@@ -46,8 +46,8 @@ meta_df=meta_df.dropna(subset=['title','year'],how='any')
 mojo_df=mojo_df.dropna(subset=['title','year'],how='any')
 meta_df['intyear']=[int(year) for year in meta_df['year']]
 mojo_df['intyear']=[int(year) for year in mojo_df['year']]
-meta_df['upper_title']= map(lambda x: x.upper(), meta_df['title'])
-mojo_df['upper_title']= map(lambda x: x.upper(), mojo_df['title'])
+meta_df['upper_title']= map(lambda x: x.upper().strip(), meta_df['title'])
+mojo_df['upper_title']= map(lambda x: x.upper().strip(), mojo_df['title'])
 merged_df = pd.merge(meta_df, mojo_df, how='outer', on='upper_title')
 
 merged_df=merged_df.sort('upper_title')
@@ -94,7 +94,7 @@ merged_df = merged_df.drop(['director_x',
                             'metacritic_page',
                             'alt_title'], 1)
 
-pprint(merged_df.columns.values)
+#pprint(merged_df.columns.values)
 new_columns = ['genre', 'metascore', 'num_critic_reviews', 'num_user_ratings',
        'num_user_reviews', 'rating', 'release_date', 'runtime_minutes',
        'studio', 'user_score', 'title', 'domestic_gross',
@@ -105,6 +105,15 @@ new_columns = ['genre', 'metascore', 'num_critic_reviews', 'num_user_ratings',
        'ROI-international', 'director_ROI-total', 'director_worldwide_gross', 'director_count']
 merged_df.columns=new_columns
 
+john_carpenter_films=merged_df[merged_df.director == 'John Carpenter']
+
+genres=list(merged_df['genre'].dropna())
+genress2=set([item for sublist in genres for item in sublist])
+
+print len(genres2)
+
+for genre in genres2:
+    merged_df[genre]=map(lambda x: genre in x, meta_df['genre'])
 
 merged_df['title_len']=merged_df[len('title')]
 modelinputs = merged_df[['title',
