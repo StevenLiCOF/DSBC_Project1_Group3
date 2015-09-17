@@ -157,7 +157,7 @@ ur_dic = dict(ur_df)
 
 type(ur_dic.keys()[0])
 
-ds_df = pd.read_csv(os.path.join('USDollarIndexTable.csv'), index_col = 'Year')
+ds_df = pd.read_csv(os.path.join('USDollarIndexTable.csv'), index_col = 'DATE')
 
 #ds_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\USDollarIndexTable.csv', index_col = 'DATE')
 ds_dic = dict(ds_df.stack())
