@@ -46,13 +46,11 @@ meta_df=meta_df.dropna(subset=['title','year'],how='any')
 mojo_df=mojo_df.dropna(subset=['title','year'],how='any')
 meta_df['intyear']=[int(year) for year in meta_df['year']]
 mojo_df['intyear']=[int(year) for year in mojo_df['year']]
-meta_df['upper_title']= map(lambda x: x.upper().strip(), meta_df['title'])
-mojo_df['upper_title']= map(lambda x: x.upper().strip(), mojo_df['title'])
-merged_df = pd.merge(meta_df, mojo_df, how='outer', on='upper_title')
+import re,string
+meta_df['char_title']= map(lambda x: re.sub('[\W_]+', '', x).upper(), meta_df['title'])
+mojo_df['char_title']= map(lambda x: re.sub('[\W_]+', '', x).upper(), mojo_df['title'])
+merged_df = pd.merge(meta_df, mojo_df, how='outer', on='char_title')
 
-merged_df=merged_df.sort('upper_title')
-
-merged_df.columns.values
 
 merged_df['intyear'] = merged_df['intyear_x'].fillna(merged_df['intyear_y'])
 
@@ -82,6 +80,8 @@ merged_df = merged_df.drop(['director_x',
                             'director_y',
                             'intyear_x',
                             'intyear_y',
+                            #'upper_title_x',
+                            #'upper_title_y',
                             'year_x',
                             'year_y',
                             'complete',
@@ -89,45 +89,60 @@ merged_df = merged_df.drop(['director_x',
                             'dummy_x',
                             'complete',
                             'unable to retrieve',
-                            'title_x',
-                            'title_y',
                             'metacritic_page',
                             'alt_title'], 1)
 
-#pprint(merged_df.columns.values)
+pprint(merged_df.columns.values)
 new_columns = ['genre', 'metascore', 'num_critic_reviews', 'num_user_ratings',
        'num_user_reviews', 'rating', 'release_date', 'runtime_minutes',
-       'studio', 'user_score', 'title', 'domestic_gross',
+       'studio','title_meta', 'user_score', 'title', 'domestic_gross',
        'opening_per_theater', 'opening_weekend_take',
-       'production_budget', 'release_date_limited', 'release_date_wide',
+       'production_budget', 'release_date_limited', 'release_date_wide','title_mojo',
        'widest_release', 'worldwide_gross', 'intyear', 'director',
        'international_gross', 'ROI-total', 'ROI-domestic',
        'ROI-international', 'director_ROI-total', 'director_worldwide_gross', 'director_count']
 merged_df.columns=new_columns
 
-john_carpenter_films=merged_df[merged_df.director == 'John Carpenter']
+#john_carpenter_films=merged_df[merged_df.director == 'John Carpenter']
 
 genres=list(merged_df['genre'].dropna())
 genress2=set([item for sublist in genres for item in sublist])
 
-print len(genres2)
+#print len(genres2)
 
 for genre in genres2:
-    merged_df[genre]=map(lambda x: genre in x, meta_df['genre'])
+    merged_df[genre]=map(lambda x: (type(x)==list) and (str(genre) in x), merged_df['genre'])
 
-merged_df['title_len']=merged_df[len('title')]
-modelinputs = merged_df[['title',
-                         'year',
-                         'genre',
-                         'release_date',
-                         'runtime_minutes',
-                         'studio',
-                         'production_budget',
-                         'release_date_limited',
-                         'director',
-                         'worldwide_gross']].dropna(subset=['worldwide_gross'])
-merged_df.columns.values
-mojo_df.columns.values
-meta_df.columns.values
-mojo_budget=mojo_df.dropna(subset=['production_budget'])
-print mojo_budget.shape
+import re
+
+merged_df['title_len']=map(len, merged_df['title'])
+merged_df['title_words']=map(lambda x: len(x.split()), merged_df['title'])
+
+merged_df.rating.value_counts()
+
+rating_mapping={
+'R':3,
+'PG-13':2,
+'Not Rated':3,
+'PG':1,
+'':3,
+'nan':3,
+'Unrated':3,
+'G':0,
+'TV-MA':3,
+'NC-17':4,
+'TV-14':2,
+'TV-PG':1,
+'TV-G':0,
+'Approved':3,
+'X':4,
+'M':1,
+'GP':1,
+'PG--13':2,
+'Passed':0,
+'Open':0,
+'TV-Y7':0,
+'AO':4
+}
+
+merged_df['rating_num']=map(lambda x: rating_mapping[str(x)] ,merged_df['rating'])
