@@ -146,3 +146,61 @@ rating_mapping={
 }
 
 merged_df['rating_num']=map(lambda x: rating_mapping[str(x)] ,merged_df['rating'])
+
+
+ur_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\historical_unemp_rate.csv', index_col = 'Year')
+
+ur_df = ur_df.stack()
+
+ur_dic = dict(ur_df)
+
+type(ur_dic.keys()[0])
+
+ds_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\USDollarIndexTable.csv', index_col = 'DATE')
+ds_dic = dict(ds_df.stack())
+
+merged_df['release_date_yr_mth'] = zip(merged_df['release_date'].str[0:4], merged_df['release_date'].str[5:7])
+merged_df['release_date_limited_yr_mth'] = zip(merged_df['release_date_limited'].str[0:4], merged_df['release_date_limited'].str[5:7])
+merged_df['release_date_wide_yr_mth'] = zip(merged_df['release_date_wide'].str[0:4], merged_df['release_date_wide'].str[5:7])
+
+list_keys = [item[0] for item in ds_dic.keys()]
+
+def get_ds_year(strings):   
+    year = strings[4:]
+    if int(year) <20:
+        year = '20'+year
+    else:
+        year = '19'+year
+    return year
+
+def get_ds_month(strings):
+    month = strings[:3]
+    if month == 'Jan': 
+        month = '01'
+    elif month == 'Feb': 
+        month = '02'
+    elif month == 'Mar': 
+        month = '03'
+    elif month == 'Apr': 
+        month = '04'
+    elif month == 'May':
+        month = '05'
+    elif month == 'Jun':
+        month = '06'
+    elif month == 'Jul':
+        month = '07'
+    elif month == 'Aug':
+        month = '08'
+    elif month == 'Sep':
+        month = '09'
+    elif month == 'Oct':
+        month = '10'
+    elif month == 'Nov':
+        month = '11'
+    elif month == 'Dec':
+        month = '12'
+    return month
+
+list_new_keys = [(get_ds_year(key), get_ds_month(key)) for key in list_keys]
+
+ds_dict.keys() = list_new_keys
