@@ -249,6 +249,8 @@ list_new_ur_keys = [(get_ur_year(key), get_ur_month(key)) for key in list_ur_key
 list_ur_values = [item for item in ur_dic.values()]
 
 ur_dic_new = dict(zip(list_new_ur_keys,list_values))
+ 
+merged_df['dollar_index'] = [ds_dic_new.get(merged_df['release_date_yr_mth'][i]) for i in range(len(merged_df['release_date_yr_mth']))]
 
-merged_df['dollar_index'] = [ds_dic_new.get(merged_df[['release_date_yr_mth']]) for merged_df[['release_date_yr_mth']] in list_new_keys ]
+merged_df['unemployment_rate'] = [ur_dic_new.get(merged_df['release_date_yr_mth'][i]) for i in range(len(merged_df['release_date_yr_mth']))]
 
