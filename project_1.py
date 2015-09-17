@@ -106,14 +106,12 @@ merged_df.columns=new_columns
 #john_carpenter_films=merged_df[merged_df.director == 'John Carpenter']
 
 genres=list(merged_df['genre'].dropna())
-genress2=set([item for sublist in genres for item in sublist])
+genres2=set([item for sublist in genres for item in sublist])
 
 #print len(genres2)
 
 for genre in genres2:
     merged_df[genre]=map(lambda x: (type(x)==list) and (str(genre) in x), merged_df['genre'])
-
-import re
 
 merged_df['title_len']=map(len, merged_df['title'])
 merged_df['title_words']=map(lambda x: len(x.split()), merged_df['title'])
