@@ -147,8 +147,9 @@ rating_mapping={
 
 merged_df['rating_num']=map(lambda x: rating_mapping[str(x)] ,merged_df['rating'])
 
+ur_df = pd.read_csv(os.path.join('historical_unemp_rate.csv'), index_col = 'Year')
 
-ur_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\historical_unemp_rate.csv', index_col = 'Year')
+#ur_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\historical_unemp_rate.csv', index_col = 'Year')
 
 ur_df = ur_df.stack()
 
@@ -156,7 +157,9 @@ ur_dic = dict(ur_df)
 
 type(ur_dic.keys()[0])
 
-ds_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\USDollarIndexTable.csv', index_col = 'DATE')
+ds_df = pd.read_csv(os.path.join('USDollarIndexTable.csv'), index_col = 'Year')
+
+#ds_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\USDollarIndexTable.csv', index_col = 'DATE')
 ds_dic = dict(ds_df.stack())
 
 merged_df['release_date_yr_mth'] = zip(merged_df['release_date'].str[0:4], merged_df['release_date'].str[5:7])
@@ -203,4 +206,49 @@ def get_ds_month(strings):
 
 list_new_keys = [(get_ds_year(key), get_ds_month(key)) for key in list_keys]
 
-ds_dict.keys() = list_new_keys
+list_values = [item for item in ds_dic.values()]
+
+ds_dic_new = dict(zip(list_new_keys,list_values))
+
+list_ur_keys = [item for item in ur_dic.keys()]
+
+def get_ur_year(list_of_keys):
+    year = str(list_of_keys[0])
+    return year
+
+def get_ur_month(list_of_keys):
+    month = str(list_of_keys[1])
+    if month == 'Jan': 
+        month = '01'
+    elif month == 'Feb': 
+        month = '02'
+    elif month == 'Mar': 
+        month = '03'
+    elif month == 'Apr': 
+        month = '04'
+    elif month == 'May':
+        month = '05'
+    elif month == 'Jun':
+        month = '06'
+    elif month == 'Jul':
+        month = '07'
+    elif month == 'Aug':
+        month = '08'
+    elif month == 'Sep':
+        month = '09'
+    elif month == 'Oct':
+        month = '10'
+    elif month == 'Nov':
+        month = '11'
+    elif month == 'Dec':
+        month = '12'
+    return month
+    
+list_new_ur_keys = [(get_ur_year(key), get_ur_month(key)) for key in list_ur_keys]
+
+list_ur_values = [item for item in ur_dic.values()]
+
+ur_dic_new = dict(zip(list_new_ur_keys,list_values))
+
+merged_df['dollar_index'] = [ds_dic_new.get(merged_df[['release_date_yr_mth']]) for merged_df[['release_date_yr_mth']] in list_new_keys ]
+
