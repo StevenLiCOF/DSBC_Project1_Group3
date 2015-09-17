@@ -145,6 +145,49 @@ rating_mapping={
 
 merged_df['rating_num']=map(lambda x: rating_mapping[str(x)] ,merged_df['rating'])
 
+merged_df['release_date_yr_mth'] = zip(merged_df['release_date'].str[0:4], merged_df['release_date'].str[5:7])
+merged_df['release_date_limited_yr_mth'] = zip(merged_df['release_date_limited'].str[0:4], merged_df['release_date_limited'].str[5:7])
+merged_df['release_date_wide_yr_mth'] = zip(merged_df['release_date_wide'].str[0:4], merged_df['release_date_wide'].str[5:7])
+merged_df['release_date_mth']=merged_df['release_date'].str[5:7]
+
+dummies=pd.get_dummies(merged_df['release_date_mth'])
+merged_df = pd.concat([merged_df,dummies],axis=1)
+
+pprint(merged_df.columns.values)
+
+features=['intyear', 'runtime_minutes',
+       'production_budget',
+       'Sci-Fi', 'Crime',
+       'Romance', 'Animation', 'Music', 'Adult', 'Comedy', 'War',
+       'Horror', 'Film-Noir', 'Western', 'News', 'Thriller',
+       'Adventure', 'Mystery', 'Short', 'Drama', 'Action',
+       'Documentary', 'Musical', 'History', 'Family', 'Fantasy',
+       'Sport', 'Biography', 'title_len', 'title_words', 'rating_num'
+       ,'01','02','03','04','05','05','06','07','08','09','10','11']
+related_columns=features+['ROI-total']
+clean_data = merged_df[related_columns].dropna()
+
+import statsmodels.api as sm
+Y = clean_data['ROI-total']
+X = sm.add_constant(clean_data[features])
+
+ROI_model = sm.OLS(np.asarray(Y), np.asarray(X)).fit()
+ROI_model.summary()
+
+from sklearn.cross_validation import train_test_split
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
+
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error
+def runlasso(setalpha):
+    clf = linear_model.Lasso(alpha = setalpha, normalize=True)
+    clf.fit(X_train,Y_train)
+    Y_predicted = clf.predict(X_test)
+    print mean_squared_error(Y_predicted, Y_test)
+for i in np.arange(1,2,0.1):
+    runlasso(i)
+print clf.coef_
+
 ur_df = pd.read_csv(os.path.join('historical_unemp_rate.csv'), index_col = 'Year')
 
 #ur_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\historical_unemp_rate.csv', index_col = 'Year')
@@ -159,10 +202,6 @@ ds_df = pd.read_csv(os.path.join('USDollarIndexTable.csv'), index_col = 'DATE')
 
 #ds_df = pd.read_csv('C:\Users\dxk277\Desktop\Project\python\DSBC_Project1_Group3\USDollarIndexTable.csv', index_col = 'DATE')
 ds_dic = dict(ds_df.stack())
-
-merged_df['release_date_yr_mth'] = zip(merged_df['release_date'].str[0:4], merged_df['release_date'].str[5:7])
-merged_df['release_date_limited_yr_mth'] = zip(merged_df['release_date_limited'].str[0:4], merged_df['release_date_limited'].str[5:7])
-merged_df['release_date_wide_yr_mth'] = zip(merged_df['release_date_wide'].str[0:4], merged_df['release_date_wide'].str[5:7])
 
 list_keys = [item[0] for item in ds_dic.keys()]
 
