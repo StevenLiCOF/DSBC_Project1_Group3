@@ -156,23 +156,16 @@ merged_df = pd.concat([merged_df,dummies],axis=1)
 pprint(merged_df.columns.values)
 
 features=['intyear', 'runtime_minutes',
-       'production_budget',
+       #'production_budget',
        'Sci-Fi', 'Crime',
        'Romance', 'Animation', 'Music', 'Adult', 'Comedy', 'War',
        'Horror', 'Film-Noir', 'Western', 'News', 'Thriller',
        'Adventure', 'Mystery', 'Short', 'Drama', 'Action',
        'Documentary', 'Musical', 'History', 'Family', 'Fantasy',
        'Sport', 'Biography', 'title_len', 'title_words', 'rating_num'
-       ,'01','02','03','04','05','05','06','07','08','09','10','11']
+       ,'01','02','03','04','05','06','07','08','09','10','11']
 related_columns=features+['ROI-total']
 clean_data = merged_df[related_columns].dropna()
-
-import statsmodels.api as sm
-Y = clean_data['ROI-total']
-X = sm.add_constant(clean_data[features])
-
-ROI_model = sm.OLS(np.asarray(Y), np.asarray(X)).fit()
-ROI_model.summary()
 
 from sklearn.cross_validation import train_test_split
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
@@ -184,9 +177,16 @@ def runlasso(setalpha):
     clf.fit(X_train,Y_train)
     Y_predicted = clf.predict(X_test)
     print mean_squared_error(Y_predicted, Y_test)
-for i in np.arange(1,2,0.1):
+for i in np.arange(1,1.5,0.1):
     runlasso(i)
-print clf.coef_
+from decimal import *
+getcontext().prec=6
+print [coeff for coeff in clf.coef_]
+
+import matplotlib
+import seaborn
+
+coeffs = zip(X_test.columns.values,clf.coef_)
 
 ur_df = pd.read_csv(os.path.join('historical_unemp_rate.csv'), index_col = 'Year')
 
