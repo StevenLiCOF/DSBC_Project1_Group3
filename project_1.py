@@ -155,8 +155,8 @@ merged_df = pd.concat([merged_df,dummies],axis=1)
 
 pprint(merged_df.columns.values)
 
-features=['intyear', 'runtime_minutes',
-       #'production_budget',
+features=['intyear','runtime_minutes',
+       'production_budget',
        'Sci-Fi', 'Crime',
        'Romance', 'Animation', 'Music', 'Adult', 'Comedy', 'War',
        'Horror', 'Film-Noir', 'Western', 'News', 'Thriller',
@@ -164,8 +164,12 @@ features=['intyear', 'runtime_minutes',
        'Documentary', 'Musical', 'History', 'Family', 'Fantasy',
        'Sport', 'Biography', 'title_len', 'title_words', 'rating_num'
        ,'01','02','03','04','05','06','07','08','09','10','11']
-related_columns=features+['ROI-total']
+related_columns=features+['ROI-total','title','release_date_yr_mth']
 clean_data = merged_df[related_columns].dropna()
+
+import statsmodels.api as sm
+Y = [np.log(ROI) for ROI in clean_data['ROI-total']]
+X = clean_data[features]
 
 from sklearn.cross_validation import train_test_split
 X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2)
@@ -176,17 +180,80 @@ def runlasso(setalpha):
     clf = linear_model.Lasso(alpha = setalpha, normalize=True)
     clf.fit(X_train,Y_train)
     Y_predicted = clf.predict(X_test)
-    print mean_squared_error(Y_predicted, Y_test)
-for i in np.arange(1,1.5,0.1):
-    runlasso(i)
-from decimal import *
-getcontext().prec=6
-print [coeff for coeff in clf.coef_]
+    print (mean_squared_error(Y_predicted, Y_test),setalpha)
+    #print clf.coef_
+    #print clf.intercept_
+    return clf
+for i in np.arange(0,0.002,0.0001):
+    model = runlasso(i)
+print model.coef_
+
+clf = linear_model.Lasso(alpha = .0005, normalize=True)
+clf.fit(X_train,Y_train)
+print clf.coef_
+print clf.intercept_
+Y_predicted = clf.predict(X_test)
+print mean_squared_error(Y_predicted, Y_test)
+
+coeffs = zip(X_test.columns.values,clf.coef_)
 
 import matplotlib
 import seaborn
 
-coeffs = zip(X_test.columns.values,clf.coef_)
+predvsact = pd.DataFrame(zip(Y_predicted, Y_test))
+predvsact.columns=['predicted','actual']
+
+
+    
+clean_data['predicted_log(ROI)'] = clf.predict(clean_data[features])
+clean_data['log(ROI)'] = [np.log(value) for value in clean_data['ROI-total']]
+clean_data['resid'] = clean_data['log(ROI)']-clean_data['predicted_log(ROI)']
+
+import matplotlib.pyplot as plt
+with seaborn.axes_style('white'):
+    plot = clean_data.plot(kind='scatter', 
+                      x='predicted_log(ROI)', 
+                      y='log(ROI)', 
+                      alpha=0.5,
+                      figsize=(10,6))
+    seaborn.despine()
+    plot.set_title("How well does our model predict ROI?")
+    plot.set_xlim([-1,5])
+    plot.set_ylim([-1,5])
+    plot.set_xlabel('predicted_log(ROI)')
+    plot.set_ylabel('log(ROI)')
+    plt.plot(clean_data['log(ROI)'], clean_data['log(ROI)'], 'r')
+    
+with seaborn.axes_style('white'):
+    plot = clean_data.plot(kind='scatter', 
+                      x='predicted_log(ROI)', 
+                      y='resid', 
+                      alpha=0.5,
+                      figsize=(10,6))
+    seaborn.despine()
+    plot.set_title("Residuals by prediction")
+    plot.set_xlim([-1,3])
+    plot.set_ylim([-7,9])
+    plot.set_xlabel('predicted_log(ROI)')
+    plot.set_ylabel('resid')
+    #plt.plot(clean_data['log(ROI)'], clean_data['log(ROI)'], 'r')
+    
+modelperf_year=clean_data[['intyear','predicted_log(ROI)','log(ROI)']].groupby(['intyear']).mean()
+
+with seaborn.axes_style('white'):
+    plot = modelperf_year.plot(kind='line', 
+                      #x='intyear', 
+                      y=['log(ROI)', 'predicted_log(ROI)'],
+                      figsize=(10,6))
+    seaborn.despine()
+    plot.set_title("ROI predicted vs. actual by year")
+    plot.set_xlim([1995,2015])
+    plot.set_ylim([0,2])
+    plot.set_xlabel('Year')
+    plot.set_ylabel('ROI')
+    #plt.plot(clean_data['ROI-total'], clean_data['ROI-total'], 'r')
+
+
 
 ur_df = pd.read_csv(os.path.join('historical_unemp_rate.csv'), index_col = 'Year')
 
@@ -286,8 +353,75 @@ list_new_ur_keys = [(get_ur_year(key), get_ur_month(key)) for key in list_ur_key
 list_ur_values = [item for item in ur_dic.values()]
 
 ur_dic_new = dict(zip(list_new_ur_keys,list_ur_values))
- 
+
 merged_df['dollar_index'] = [ds_dic_new.get(merged_df['release_date_yr_mth'][i]) for i in range(len(merged_df['release_date_yr_mth']))]
 
 merged_df['unemployment_rate'] = [ur_dic_new.get(merged_df['release_date_yr_mth'][i]) for i in range(len(merged_df['release_date_yr_mth']))]
 
+keepcols=['ROI-total','domestic_gross','worldwide_gross','intyear','dollar_index','unemployment_rate','release_date_yr_mth']
+clean_data2=merged_df[keepcols].dropna()
+
+clean_data2['domestic_gross_ratio'] = clean_data2['domestic_gross']/clean_data2['worldwide_gross']
+
+
+with seaborn.axes_style('white'):
+    plot = clean_data2.plot(kind='scatter', 
+                      x='dollar_index', 
+                      y='domestic_gross_ratio', 
+                      alpha=0.5,
+                      figsize=(10,6))
+    seaborn.despine()
+    plot.set_title("Domestic Gross Ratio against Dollar Strength")
+    plot.set_xlim([80,140])
+    plot.set_ylim([0,1])
+    plot.set_xlabel('dollar_index')
+    plot.set_ylabel('domestic_gross_ratio')
+    #plt.plot(clean_data['log(ROI)'], clean_data['log(ROI)'], 'r')
+    
+with seaborn.axes_style('white'):
+    plot = clean_data2.plot(kind='scatter', 
+                      x='unemployment_rate', 
+                      y='domestic_gross', 
+                      alpha=0.5,
+                      figsize=(10,6))
+    seaborn.despine()
+    plot.set_title("Domestic Gross against Unemployment")
+    plot.set_xlim([3,11])
+    plot.set_ylim([0,800000000])
+    plot.set_xlabel('unemployment_rate')
+    plot.set_ylabel('domestic_gross')
+    #plt.plot(clean_data['log(ROI)'], clean_data['log(ROI)'], 'r')
+    
+    
+clean_data2['domestic_gross_normalized']=clean_data2['domestic_gross']/800000000
+clean_data2['unemployment_rate_normalized']=clean_data2['unemployment_rate']/20
+clean_data2['dollar_index_normalized']=clean_data2['dollar_index']/200
+econ_year=clean_data2[['intyear','domestic_gross_ratio','unemployment_rate_normalized','domestic_gross_normalized','dollar_index_normalized']].groupby(['intyear']).mean()
+#with seaborn.axes_style('white'):
+#    plot = econ_year.plot(kind='line', 
+#                      #x='unemployment_rate', 
+#                      y=['domestic_gross_normalized','unemployment_rate_normalized'],
+#                      figsize=(10,6))
+#    seaborn.despine()
+#    plot.set_title("Domestic Gross against Unemployment")
+#    plot.set_ylim([0,1])
+with seaborn.axes_style('white'):
+    plot = econ_year.plot(kind='line', 
+                      #x='unemployment_rate', 
+                      y=['domestic_gross_ratio','dollar_index_normalized','unemployment_rate_normalized'],
+                      #alpha=0.5,
+                      figsize=(10,6))
+    seaborn.despine()
+    plot.set_title("Domestic Gross against Unemployment")
+    #plot.set_xlim([3,11])
+    plot.set_ylim([0,0.7])
+    #plot.set_xlabel('unemployment_rate')
+    #plot.set_ylabel('domestic_gross')
+merged_df[['Sci-Fi', 'Crime',
+       'Romance', 'Animation', 'Music', 'Adult', 'Comedy', 'War',
+       'Horror', 'Film-Noir', 'Western', 'News', 'Thriller',
+       'Adventure', 'Mystery', 'Short', 'Drama', 'Action',
+       'Documentary', 'Musical', 'History', 'Family', 'Fantasy',
+       'Sport', 'Biography']].sum()
+
+clf.score(X,Y)
